@@ -14,10 +14,21 @@ SKIP_DOMAINS = [
     'quora.com', 'reddit.com', '99acres.com', 'magicbricks.com',
     'housing.com', 'yellowpages.in', 'tradeindia.com', 'linktr.ee',
     'linktree.com', 'sites.google.com', 'zomato.com', 'swiggy.com',
-    'amazon.in', 'flipkart.com', 'naukri.com', 'linkedin.com'
+    'amazon.in', 'flipkart.com', 'naukri.com', 'linkedin.com',
+    'olx.in', 'quikr.com', 'clickindia.com', 'vivastreet.co.in'
 ]
 
 WEAK_DOMAINS = ['instagram.com', 'facebook.com', 'sites.google.com', 'linktr.ee', 'linktree.com']
+
+# Industry-specific search modifiers for better targeting
+LOCATION_MODIFIERS = {
+    'Mumbai': ['Bandra', 'Andheri', 'Powai', 'Juhu', 'Colaba'],
+    'Delhi': ['South Delhi', 'Connaught Place', 'Saket', 'Dwarka', 'Rohini'],
+    'Bangalore': ['Koramangala', 'Indiranagar', 'Whitefield', 'HSR Layout', 'Jayanagar'],
+    'Pune': ['Koregaon Park', 'Hinjewadi', 'Viman Nagar', 'Kothrud', 'Aundh'],
+    'Hyderabad': ['Banjara Hills', 'Jubilee Hills', 'Gachibowli', 'Hitech City', 'Madhapur'],
+    'Chennai': ['T Nagar', 'Anna Nagar', 'Velachery', 'Adyar', 'Nungambakkam'],
+}
 
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

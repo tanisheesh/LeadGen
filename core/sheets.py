@@ -22,7 +22,7 @@ LEADS_HEADERS = [
     'Has WhatsApp', 'Has Booking', 'Has SSL', 'Mobile Optimized',
     'Has Payment', 'Has Chatbot', 'Has Contact Form',
     'Tech Stack', 'Copyright Year',
-    'Source', 'Date Added'
+    'Source', 'Date Added', 'Tags', 'Notes', 'Status', 'Last Contact'
 ]
 
 ERRORS_HEADERS = ['Timestamp', 'Error', 'Node', 'Lead Info']
@@ -76,7 +76,7 @@ def lead_to_row(lead: dict) -> list:
         lead.get('website') or lead.get('raw_url', ''),
         lead.get('phone', ''),
         lead.get('email', ''),
-        '' if (lead.get('contact_name') or '').strip() in ('', 'None None') else lead.get('contact_name', ''),
+        lead.get('contact_name', ''),
         lead.get('city', ''),
         lead.get('address', ''),
         lead.get('country', 'India'),
@@ -102,6 +102,10 @@ def lead_to_row(lead: dict) -> list:
         lead.get('copyright_year', ''),
         lead.get('source', 'GoogleMaps'),
         datetime.now().strftime('%Y-%m-%d %H:%M'),
+        lead.get('tags', ''),
+        lead.get('notes', ''),
+        lead.get('status', 'New'),
+        lead.get('last_contact', ''),
     ]
 
 

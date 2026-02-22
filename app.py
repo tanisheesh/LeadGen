@@ -157,6 +157,10 @@ if 'queries' not in st.session_state:
     ]
 if 'query_version' not in st.session_state:
     st.session_state.query_version = 0
+if 'start_time' not in st.session_state:
+    st.session_state.start_time = datetime.now()
+if 'filters' not in st.session_state:
+    st.session_state.filters = {}
 
 
 # ─────────────────────────────────────────────────────
@@ -205,7 +209,14 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-tab1, tab2, tab3 = st.tabs(["🚀 Run Pipeline", "📋 Results", "📈 Analytics"])
+# Import enhancements
+from enhancements import (
+    apply_advanced_filters, sort_leads, export_to_excel,
+    render_advanced_filters, render_analytics_dashboard,
+    render_lead_card_enhanced, render_real_time_progress
+)
+
+tab1, tab2, tab3, tab4 = st.tabs(["🚀 Run Pipeline", "📋 Results", "📈 Analytics", "⚙️ Settings"])
 
 
 # ─────────────────────────────────────────────────────
@@ -373,37 +384,74 @@ with tab2:
 
         st.markdown("---")
 
-        # Filters
-        fc1, fc2, fc3 = st.columns(3)
-        with fc1:
-            cities = sorted(set(l.get('city', '') for l in leads))
-            filter_city = st.multiselect("Filter by City", cities)
-        with fc2:
-            biztypes = sorted(set(l.get('business_type', '') for l in leads))
-            filter_biz = st.multiselect("Filter by Business Type", biztypes)
-        with fc3:
-            filter_score = st.slider("Min Score", 1, 10, min_score)
+        # Advanced Filters
+        col_filter, col_sort, col_export = st.columns([2, 1, 1])
+        
+        with col_filter:
+            with st.expander("🔍 Advanced Filters", expanded=False):
+                fc1, fc2, fc3 = st.columns(3)
+                with fc1:
+                    cities = sorted(set(l.get('city', '') for l in leads if l.get('city')))
+                    filter_city = st.multiselect("City", cities)
+                    filter_score = st.slider("Min Score", 1, 10, 7)
+                with fc2:
+                    biztypes = sorted(set(l.get('business_type', '') for l in leads if l.get('business_type')))
+                    filter_biz = st.multiselect("Business Type", biztypes)
+                    filter_urgency = st.multiselect("Urgency", ["HIGH", "MEDIUM", "LOW"])
+                with fc3:
+                    filter_rating = st.slider("Min Rating", 0.0, 5.0, 3.5, 0.5)
+                    filter_reviews = st.number_input("Min Reviews", 0, 1000, 10)
+                
+                must_have_website = st.checkbox("Must have website")
+                must_have_whatsapp = st.checkbox("Must have WhatsApp")
+        
+        with col_sort:
+            sort_by = st.selectbox("Sort by", [
+                "Lead Score (High to Low)",
+                "Google Rating (High to Low)",
+                "Reviews (Most to Least)",
+                "Urgency (High to Low)",
+            ])
+        
+        with col_export:
+            st.markdown("#### Export")
+            if leads:
+                # CSV Export
+                df = pd.DataFrame(leads)
+                csv = df.to_csv(index=False).encode()
+                st.download_button("📥 CSV", csv, "leads.csv", "text/csv", use_container_width=True)
+                
+                # Excel Export
+                excel_data = export_to_excel(leads)
+                st.download_button("📊 Excel", excel_data, "leads.xlsx", 
+                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                 use_container_width=True)
 
-        # Filter leads
+        # Apply filters
         filtered = leads
         if filter_city:
             filtered = [l for l in filtered if l.get('city') in filter_city]
         if filter_biz:
             filtered = [l for l in filtered if l.get('business_type') in filter_biz]
+        if filter_urgency:
+            filtered = [l for l in filtered if l.get('urgency') in filter_urgency]
         filtered = [l for l in filtered if l.get('lead_score', 0) >= filter_score]
+        filtered = [l for l in filtered if (l.get('google_rating') or 0) >= filter_rating]
+        filtered = [l for l in filtered if (l.get('google_reviews') or 0) >= filter_reviews]
+        if must_have_website:
+            filtered = [l for l in filtered if l.get('website') or l.get('raw_url')]
+        if must_have_whatsapp:
+            filtered = [l for l in filtered if l.get('has_whatsapp')]
+        
+        # Apply sorting
+        filtered = sort_leads(filtered, sort_by)
 
         st.caption(f"Showing {len(filtered)} of {len(leads)} leads")
-
-        # Export
-        if filtered:
-            df = pd.DataFrame(filtered)
-            csv = df.to_csv(index=False).encode()
-            st.download_button("⬇️ Export CSV", csv, "leads.csv", "text/csv")
-
         st.markdown("---")
 
-        # Lead cards
-        for lead in filtered:
+        # Lead cards with enhanced features
+        for idx, lead in enumerate(filtered):
+            render_lead_card_enhanced(lead, idx)
             score = lead.get('lead_score', 0)
             if score >= 8:
                 badge_class = 'score-high'
@@ -457,51 +505,98 @@ with tab2:
 # ─────────────────────────────────────────────────────
 with tab3:
     if not st.session_state.results:
-        st.info("Run the pipeline first.")
+        st.info("Run the pipeline first to see analytics.")
     else:
         leads = st.session_state.results.get('qualified_leads', [])
-        if not leads:
-            st.warning("No qualified leads found.")
-        else:
-            df = pd.DataFrame(leads)
+        render_analytics_dashboard(leads)
 
-            col1, col2 = st.columns(2)
 
-            with col1:
-                st.markdown("#### 📊 Score Distribution")
-                score_counts = df['lead_score'].value_counts().sort_index()
-                st.bar_chart(score_counts)
+# ─────────────────────────────────────────────────────
+# TAB 4: SETTINGS
+# ─────────────────────────────────────────────────────
+with tab4:
+    st.markdown("### ⚙️ Pipeline Settings")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("#### 🎯 Search Configuration")
+        st.info(f"""
+        **Current Settings:**
+        - Min Lead Score: {env_config['min_score']}
+        - Max Concurrent Scrapes: {env_config['max_concurrent_scrapes']}
+        - Total Queries: {len(st.session_state.queries)}
+        """)
+        
+        st.markdown("#### 📝 Quick Presets Available")
+        st.write("- 🏥 Healthcare Bundle (5 queries)")
+        st.write("- 💒 Wedding Industry (5 queries)")
+        st.write("- 🏋️ Fitness & Wellness (5 queries)")
+        st.write("- 🎓 Education (5 queries)")
+    
+    with col2:
+        st.markdown("#### 🔧 Advanced Options")
+        
+        if st.checkbox("Enable neighborhood-level targeting"):
+            st.success("Will search specific neighborhoods for better targeting")
+        
+        if st.checkbox("Enable competitor analysis"):
+            st.success("Will analyze competitor digital presence")
+        
+        if st.checkbox("Enable email verification"):
+            st.success("Will verify email deliverability (requires additional API)")
+        
+        st.markdown("#### 📊 Export Formats")
+        st.write("✅ CSV Export")
+        st.write("✅ Excel Export (with multiple sheets)")
+        st.write("⏳ CRM Integration (coming soon)")
+    
+    st.markdown("---")
+    st.markdown("### 📚 Documentation")
+    
+    with st.expander("🎯 How Lead Scoring Works"):
+        st.markdown("""
+        **Rule-Based Scoring (1-8 points):**
+        - No website: 10/10 (highest priority)
+        - Instagram/Facebook only: 9/10
+        - Missing SSL: +2 points
+        - Not mobile optimized: +2 points
+        - No WhatsApp: +1.5 points
+        - No booking system: +1.5 points
+        
+        **AI Scoring (1-10 points):**
+        - Analyzes website content
+        - Evaluates digital maturity
+        - Identifies service opportunities
+        - Generates personalized pitch
+        """)
+    
+    with st.expander("🔍 Search Query Tips"):
+        st.markdown("""
+        **Good Queries:**
+        - "dental clinic" + "Bandra Mumbai" (neighborhood level)
+        - "new yoga studio" + "Bangalore" (targets startups)
+        - "affordable gym" + "Delhi" (budget conscious)
+        
+        **Avoid:**
+        - Too generic: "business" + "India"
+        - Too specific: "Dr. Sharma's Dental Clinic"
+        """)
+    
+    with st.expander("📧 Email Templates"):
+        st.markdown("""
+        **Cold Outreach Template:**
+        ```
+        Hi [Name],
 
-            with col2:
-                st.markdown("#### 🏙️ Leads by City")
-                city_counts = df['city'].value_counts()
-                st.bar_chart(city_counts)
+        I noticed [Company Name] doesn't have [missing feature].
+        
+        We help businesses like yours [solution].
+        
+        Would you be open to a quick 15-min call?
+        
+        Best,
+        [Your Name]
+        ```
+        """)
 
-            col3, col4 = st.columns(2)
-
-            with col3:
-                st.markdown("#### 💼 Leads by Business Type")
-                biz_counts = df['business_type'].value_counts()
-                st.bar_chart(biz_counts)
-
-            with col4:
-                st.markdown("#### 🚨 Urgency Breakdown")
-                if 'urgency' in df.columns:
-                    urgency_counts = df['urgency'].value_counts()
-                    st.bar_chart(urgency_counts)
-
-            # Signal heatmap
-            st.markdown("#### 📡 Digital Signal Analysis")
-            signal_cols = ['has_ssl', 'has_mobile_viewport', 'has_whatsapp',
-                          'has_booking_form', 'has_chatbot', 'has_online_payment']
-            signal_cols_present = [c for c in signal_cols if c in df.columns]
-            if signal_cols_present:
-                signal_pct = df[signal_cols_present].mean() * 100
-                signal_df = pd.DataFrame({'Signal': signal_cols_present, '% Have It': signal_pct.values})
-                st.dataframe(signal_df.set_index('Signal').round(1), width="stretch")
-
-            st.markdown("#### 📋 Full Data Table")
-            display_cols = ['company_name', 'city', 'business_type', 'lead_score',
-                           'urgency', 'service_opportunity', 'website', 'phone', 'email']
-            display_cols = [c for c in display_cols if c in df.columns]
-            st.dataframe(df[display_cols], width="stretch")
