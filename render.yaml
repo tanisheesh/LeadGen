@@ -1,0 +1,43 @@
+services:
+  # ── Streamlit Dashboard ──────────────────────
+  - type: web
+    name: leadgen-dashboard
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: SERPAPI_KEY
+        sync: false
+      - key: OPENROUTER_KEY
+        sync: false
+      - key: HUNTER_KEY
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: SHEET_ID
+        sync: false
+      - key: MIN_SCORE
+        value: "7"
+
+  # ── Daily Cron Job ───────────────────────────
+  - type: cron
+    name: leadgen-cron
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    schedule: "30 0 * * *"   # 6:00 AM IST (UTC+5:30 = 00:30 UTC)
+    command: python cron_job.py
+    envVars:
+      - key: SERPAPI_KEY
+        sync: false
+      - key: OPENROUTER_KEY
+        sync: false
+      - key: HUNTER_KEY
+        sync: false
+      - key: GOOGLE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: SHEET_ID
+        sync: false
+      - key: MIN_SCORE
+        value: "7"
+      - key: MAX_CONCURRENT
+        value: "5"
