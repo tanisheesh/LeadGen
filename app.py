@@ -196,7 +196,15 @@ with st.sidebar:
     max_concurrent = st.slider("Concurrent Scrapes", 1, 10, env_config['max_concurrent_scrapes'])
 
     st.markdown("---")
-    st.markdown("<small style='color:#555'>LeadGen India v1.0<br>Built with ❤️</small>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='text-align: center; color: #555; font-size: 0.85rem; padding: 1rem 0;'>
+        <p style='margin: 0;'>LeadGen India v2.0</p>
+        <p style='margin: 0.5rem 0 0 0;'>
+            Made with <span style='color: #e94560;'>❤️</span> by 
+            <a href='https://tanisheesh.is-a.dev/' target='_blank' style='color: #e94560; text-decoration: none;'>Tanish Poddar</a>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────
@@ -600,3 +608,23 @@ with tab4:
         ```
         """)
 
+
+
+# ─────────────────────────────────────────────────────
+# FOOTER
+# ─────────────────────────────────────────────────────
+st.markdown("---")
+st.markdown("""
+<div style='text-align: center; color: #555; font-size: 0.9rem; padding: 2rem 0 1rem 0;'>
+    <p style='margin: 0; font-size: 1rem;'>LeadGen India v2.0</p>
+    <p style='margin: 0.8rem 0 0 0;'>
+        Made with <span style='color: #e94560; font-size: 1.1rem;'>❤️</span> by 
+        <a href='https://tanisheesh.is-a.dev/' target='_blank' 
+           style='color: #e94560; text-decoration: none; font-weight: 600; transition: opacity 0.2s;'
+           onmouseover='this.style.opacity="0.7"' 
+           onmouseout='this.style.opacity="1"'>
+            Tanish Poddar
+        </a>
+    </p>
+</div>
+""", unsafe_allow_html=True)
