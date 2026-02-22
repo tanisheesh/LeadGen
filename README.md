@@ -56,7 +56,7 @@
 
 ### APIs & Services
 ![SerpAPI](https://img.shields.io/badge/SerpAPI-4285F4?style=flat-square&logo=google&logoColor=white)
-![OpenRouter](https://img.shields.io/badge/OpenRouter-412991?style=flat-square&logo=openai&logoColor=white)
+![Groq](https://img.shields.io/badge/Groq-F55036?style=flat-square&logo=ai&logoColor=white)
 ![Google Sheets](https://img.shields.io/badge/Google%20Sheets-34A853?style=flat-square&logo=google-sheets&logoColor=white)
 ![Hunter.io](https://img.shields.io/badge/Hunter.io-FF6B35?style=flat-square&logo=hunter&logoColor=white)
 

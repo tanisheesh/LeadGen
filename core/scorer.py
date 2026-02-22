@@ -6,8 +6,13 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+# Groq API (Fast + Free!)
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+AI_MODEL = "llama-3.3-70b-versatile"  # Fast + Free on Groq
+
+# Fallback to OpenRouter if Groq fails
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
-AI_MODEL = "google/gemini-flash-1.5-8b"  # Fast + cheap on OpenRouter
+OPENROUTER_MODEL = "meta-llama/llama-3.1-8b-instruct:free"
 
 
 # ─────────────────────────────────────────────
@@ -163,7 +168,7 @@ Respond with JSON:
 
 
 async def ai_score_lead(session: aiohttp.ClientSession, lead: dict, api_key: str, retries: int = 3) -> dict:
-    """Call OpenRouter AI to score a single lead"""
+    """Call Groq AI to score a single lead (fast + free!)"""
     prompt = build_ai_prompt(lead)
 
     for attempt in range(retries):
@@ -171,19 +176,20 @@ async def ai_score_lead(session: aiohttp.ClientSession, lead: dict, api_key: str
             payload = {
                 "model": AI_MODEL,
                 "max_tokens": 400,
+                "temperature": 0.7,
                 "messages": [
                     {"role": "system", "content": AI_SYSTEM_PROMPT},
                     {"role": "user", "content": prompt}
                 ]
             }
+            
+            # Try Groq first (faster + free)
             headers = {
                 "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-                "HTTP-Referer": "https://leadgen.render.app",
-                "X-Title": "Indian Lead Gen"
+                "Content-Type": "application/json"
             }
 
-            async with session.post(OPENROUTER_URL, json=payload, headers=headers,
+            async with session.post(GROQ_URL, json=payload, headers=headers,
                                      timeout=aiohttp.ClientTimeout(total=30)) as resp:
                 if resp.status == 429:
                     wait = (attempt + 1) * 5
@@ -192,7 +198,11 @@ async def ai_score_lead(session: aiohttp.ClientSession, lead: dict, api_key: str
                     continue
 
                 if resp.status != 200:
-                    logger.error(f"AI API error {resp.status}")
+                    logger.error(f"Groq API error {resp.status}")
+                    # Don't return empty, let it retry or fallback
+                    if attempt < retries - 1:
+                        await asyncio.sleep(2)
+                        continue
                     return {}
 
                 data = await resp.json()

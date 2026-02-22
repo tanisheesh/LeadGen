@@ -1,19 +1,31 @@
 """
 Configuration loader for LeadGen India
-Loads from .env file and supports service account JSON file
+Loads from Streamlit secrets, .env file, or environment variables
 """
 import os
 import json
 from pathlib import Path
 from typing import Optional
 
-# Try to load python-dotenv if available
+# Priority 1: Try to load Streamlit secrets (for Streamlit Cloud)
+try:
+    import streamlit as st
+    if hasattr(st, 'secrets') and len(st.secrets) > 0:
+        print("✓ Loaded from Streamlit secrets")
+        # Copy secrets to environment variables
+        for key, value in st.secrets.items():
+            os.environ[key] = str(value)
+except:
+    pass
+
+# Priority 2: Try to load python-dotenv if available
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    if Path('.env').exists():
+        load_dotenv('.env')
+        print("✓ Loaded .env file")
 except ImportError:
-    print("⚠️  python-dotenv not installed. Using environment variables only.")
-    print("   Install with: pip install python-dotenv")
+    pass
 
 
 def load_service_account_json() -> Optional[str]:
@@ -56,7 +68,7 @@ def get_config() -> dict:
     """
     return {
         'serpapi_key': os.environ.get('SERPAPI_KEY', ''),
-        'openrouter_key': os.environ.get('OPENROUTER_KEY', ''),
+        'openrouter_key': os.environ.get('GROQ_API_KEY', ''),  # Using Groq now
         'hunter_key': os.environ.get('HUNTER_KEY', ''),
         'sheet_id': os.environ.get('SHEET_ID', ''),
         'sheets_service_account_json': load_service_account_json(),
